@@ -46,4 +46,22 @@ public class Parser {
         while (m.find()) list.add(m.group(1));
         return list;
     }
+
+    List<List<String>> parseCalls(String line) {
+        List<String> rawTokens = parseArgs(line);
+        List<List<String>> result = new ArrayList<>();
+        List<String> call = new ArrayList<>();
+
+        int i = 0;
+        for (String token : rawTokens) {
+            if (token.equals("|")) {
+                result.add(call);
+                call = new ArrayList<>();
+            } else {
+                call.add(token);
+            }
+        }
+        result.add(call);
+        return result;
+    }
 }
