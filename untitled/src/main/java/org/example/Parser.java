@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 import static org.apache.commons.text.StringEscapeUtils.unescapeJava;
 
 public class Parser {
-    private Map<String, String> context = new HashMap<>();
+    private final Map<String, String> context = new HashMap<>();
 
     public void setVariable(String variable, String value) {
         context.put(variable, value);
@@ -23,21 +23,17 @@ public class Parser {
             }
             if (rawToken.charAt(0) == '\'') {
                 result.add(rawToken.substring(1, rawToken.length() - 1).replaceAll("\\\\'", "'"));
-            } else if (rawToken.charAt(0) == '"') {
-                rawToken = unescapeJava(rawToken.substring(1, rawToken.length() - 1));
+            } else {
+                if (rawToken.charAt(0) == '"') {
+                    rawToken = unescapeJava(rawToken.substring(1, rawToken.length() - 1));
+                }
                 StringBuilder buffer = new StringBuilder();
-                Matcher matcher = Pattern.compile("(?<=\\s|^|\"|')\\$([^\\s\"']*)(?=\\s|$|\"|')").matcher(rawToken);
+                Matcher matcher = Pattern.compile("\\$([\\w_?]*)(?=$|[^\\w_?])").matcher(rawToken);
                 while (matcher.find()) {
                     matcher.appendReplacement(buffer, context.getOrDefault(matcher.group(1), ""));
                 }
                 matcher.appendTail(buffer);
                 result.add(buffer.toString());
-            } else {
-                if (rawToken.charAt(0) == '$') {
-                    result.add(context.getOrDefault(rawToken.substring(1), ""));
-                } else {
-                    result.add(rawToken);
-                }
             }
         }
 
@@ -50,6 +46,4 @@ public class Parser {
         while (m.find()) list.add(m.group(1));
         return list;
     }
-
-
 }
