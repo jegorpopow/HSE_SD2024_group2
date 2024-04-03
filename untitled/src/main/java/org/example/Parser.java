@@ -13,6 +13,10 @@ public class Parser {
         context.put(variable, value);
     }
 
+    public Map<String, String> getContext() {
+        return context;
+    }
+
     List<String> parseArgs(String line) {
         List<String> splitted = splitArgs(line);
         List<String> result = new ArrayList<>(splitted.size());
