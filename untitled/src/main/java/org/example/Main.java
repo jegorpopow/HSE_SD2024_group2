@@ -42,7 +42,7 @@ public class Main {
             if (calls.size() == 1 && command.contains("=")) {
                 String[] parts = command.trim().split("=");
                 parser.setVariable(parts[0], parts[1]);
-                return;
+                continue;
             }
 
             try {
