@@ -13,6 +13,8 @@ import java.util.stream.Stream;
 
 
 public class Main {
+    final static Set<String> builtins = Set.of("cat", "wc", "echo", "pwd");
+    final static String path_to_lib = System.getenv("JAVA_BUILD");
 
     private static String getPrompt() {
         return System.getProperty("user.dir") + "$ ";
@@ -31,47 +33,42 @@ public class Main {
                 continue;
             }
 
-            List<List<String>> calls = parser.parseCalls(input);
-            List<String> tokens = calls.getFirst();
-            String command = tokens.get(0);
+            List<CallSpec> calls = parser.parseCalls(input);
+            CallSpec call = calls.getFirst();
 
-
-            if (command.equals("exit"))
+            if (call.isExit())
                 return;
 
-            if (calls.size() == 1 && command.contains("=")) {
-                String[] parts = command.trim().split("=");
-                parser.setVariable(parts[0], parts[1]);
+            Optional<CallSpec.AssignSpec> assignSpec = call.assignment();
+
+            if (calls.size() == 1 && assignSpec.isPresent()) {
+                parser.setVariable(assignSpec.get().variable, assignSpec.get().value);
                 continue;
             }
 
             try {
                 List<Process> processes = ProcessBuilder.startPipeline(createProcesses(calls, parser.getContext()));
                 for (Process process : processes) {
-                    // TODO: print return value if it is only one command in pipe
                     process.waitFor();
                 }
             } catch (IOException | InterruptedException e) {
-                System.out.println("Problem with pipes:(");
+                System.out.println("Problem with external commands call");
             }
         }
     }
 
-    static private List<ProcessBuilder> createProcesses(List<List<String>> calls, Map<String, String> environment) {
+    static private List<ProcessBuilder> createProcesses(List<CallSpec> calls, Map<String, String> environment) {
         List<ProcessBuilder> result = new ArrayList<>();
         for (int i = 0; i < calls.size(); i++) {
-            List<String> call = calls.get(i);
-            Set <String> builtins = Set.of("cat", "wc", "echo", "pwd");
-            if (builtins.contains(call.getFirst()) ) {
-                String path_to_lib = System.getenv("JAVA_BUILD");
-                String command = call.getFirst();
-                call.removeFirst();
+            CallSpec call = calls.get(i);
+            if (builtins.contains(call.command)) {
+
+                String command = call.command;
                 var head = List.of("java", "-cp", path_to_lib, "org.example.builtins.".concat(command.substring(0, 1).toUpperCase() + command.substring(1)));
-                call = Stream.concat(head.stream(), call.stream()).toList();
+                call = new CallSpec(Stream.concat(head.stream(), call.arguments.stream()).toList());
             }
 
-
-            ProcessBuilder processBuilder = new ProcessBuilder(call.toArray(new String[0])).inheritIO();
+            ProcessBuilder processBuilder = new ProcessBuilder(call.toArray()).inheritIO();
             if (i != 0) {
                 processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
             }

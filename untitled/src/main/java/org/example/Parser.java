@@ -17,55 +17,54 @@ public class Parser {
         return context;
     }
 
-    List<String> parseArgs(String line) {
-        List<String> splitted = splitArgs(line);
-        List<String> result = new ArrayList<>(splitted.size());
+    String processRawToken(String rawToken) {
+        if (rawToken.charAt(0) == '\'') {
+            return rawToken.substring(1, rawToken.length() - 1).replaceAll("\\\\'", "'");
+        } else {
+            if (rawToken.charAt(0) == '"') {
+                rawToken = unescapeJava(rawToken.substring(1, rawToken.length() - 1));
+            }
 
-        for (String rawToken : splitted) {
-            if (rawToken.isEmpty()) {
-                continue;
+            StringBuilder buffer = new StringBuilder();
+            Matcher matcher = Pattern.compile("\\$([\\w_?]*)(?=$|[^\\w_?])").matcher(rawToken);
+            while (matcher.find()) {
+                matcher.appendReplacement(buffer, context.getOrDefault(matcher.group(1), ""));
             }
-            if (rawToken.charAt(0) == '\'') {
-                result.add(rawToken.substring(1, rawToken.length() - 1).replaceAll("\\\\'", "'"));
-            } else {
-                if (rawToken.charAt(0) == '"') {
-                    rawToken = unescapeJava(rawToken.substring(1, rawToken.length() - 1));
-                }
-                StringBuilder buffer = new StringBuilder();
-                Matcher matcher = Pattern.compile("\\$([\\w_?]*)(?=$|[^\\w_?])").matcher(rawToken);
-                while (matcher.find()) {
-                    matcher.appendReplacement(buffer, context.getOrDefault(matcher.group(1), ""));
-                }
-                matcher.appendTail(buffer);
-                result.add(buffer.toString());
-            }
+
+            matcher.appendTail(buffer);
+            return buffer.toString();
         }
 
-        return result;
     }
 
-    List<String> splitArgs(String line) {
-        List<String> list = new ArrayList<String>();
+    static List<String> splitArgs(String line) {
+        List<String> list = new ArrayList<>();
         Matcher m = Pattern.compile("([^\"']\\S*|\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*')\\s*").matcher(line.trim());
         while (m.find()) list.add(m.group(1));
         return list;
     }
 
-    List<List<String>> parseCalls(String line) {
-        List<String> rawTokens = parseArgs(line);
-        List<List<String>> result = new ArrayList<>();
+    public List<CallSpec> parseCalls(String line) {
+        List<CallSpec> result = new ArrayList<>();
         List<String> call = new ArrayList<>();
+        List<String> tokens = splitArgs(line)
+                .stream()
+                .filter(str -> !str.isEmpty())
+                .map(this::processRawToken)
+                .toList();
 
-        int i = 0;
-        for (String token : rawTokens) {
+        System.out.println(tokens);
+        for (String token : tokens) {
             if (token.equals("|")) {
-                result.add(call);
+
+                result.add(new CallSpec(call));
                 call = new ArrayList<>();
             } else {
                 call.add(token);
             }
         }
-        result.add(call);
+
+        result.add(new CallSpec(call));
         return result;
     }
 }
