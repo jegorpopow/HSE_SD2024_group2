@@ -31,19 +31,33 @@ public final class CallSpec {
         this(tokens.getFirst(), tokens.subList(1, tokens.size()));
     }
 
-    public CallSpec (String command, String... args) {
+    public CallSpec(String command, String... args) {
         this(command, Arrays.asList(args));
     }
 
-    // Is current command exit
+    /**
+     * @return if corresponding command is exit command
+     */
     public boolean isExit() {
         return command.equals("exit");
     }
 
-    // Represent a parsing result of assignment expression
+
+    /**
+     * Assignment command representation - contains lvalue and rvalue of assignment
+     */
     public static class AssignSpec {
         final String variable;
         final String value;
+
+        @Override
+        public boolean equals(Object other) {
+            if (!(other instanceof AssignSpec otherSpec)) {
+                return false;
+            }
+
+            return variable.equals(otherSpec.variable) && value.equals(otherSpec.value);
+        }
 
         public AssignSpec(String variable, String value) {
             this.variable = variable;
@@ -52,7 +66,10 @@ public final class CallSpec {
     }
 
 
-    // Treats current command as assignment command, tries to parse it, returns Optional.empty() on fail
+    /**
+     * @return the variable name and value to assign if corresponding command is assignment command,
+     * otherwise - Optional.empty() is returned
+     */
     public Optional<AssignSpec> assignment() {
         if (arguments.isEmpty() && command.contains("=")) {
             String[] parts = command.trim().split("=");
@@ -62,7 +79,10 @@ public final class CallSpec {
         }
     }
 
-    // Returns an array of tokens
+
+    /**
+     * @return corresponding command as array of tokens
+     */
     public String[] toArray() {
         return Stream.concat(Stream.of(command), arguments.stream()).toArray(String[]::new);
     }

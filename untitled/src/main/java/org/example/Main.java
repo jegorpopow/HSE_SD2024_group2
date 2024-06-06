@@ -19,12 +19,17 @@ public class Main {
     private static String getPrompt() {
         return System.getProperty("user.dir") + "$ ";
     }
-
+    /**
+     * <p> Executions starting point, contains environment initialisation and REPL
+     * </p>
+     */
     public static void main(String[] args) {
         Parser parser = new Parser();
         Scanner scanner = new Scanner(System.in);
         String input;
 
+
+        // REPL
         while (true) {
             System.out.print(getPrompt());
             input = scanner.nextLine().trim();
@@ -52,17 +57,23 @@ public class Main {
                     process.waitFor();
                 }
             } catch (IOException | InterruptedException e) {
-                System.out.println("Problem with external commands call");
+                System.out.println("Problem with external commands call or pie creation");
             }
         }
     }
 
+    /**
+     * <p> Creates process builders for pipeline elements
+     * </p>
+     * @param calls elements of pipeline,
+     * @param environment value of env variables to push into new processes
+     * @return the list of ProcessBuilders describing each pipe element
+     */
     static private List<ProcessBuilder> createProcesses(List<CallSpec> calls, Map<String, String> environment) {
         List<ProcessBuilder> result = new ArrayList<>();
         for (int i = 0; i < calls.size(); i++) {
             CallSpec call = calls.get(i);
             if (builtins.contains(call.command)) {
-
                 String command = call.command;
                 var head = List.of("java", "-cp", path_to_lib, "org.example.builtins.".concat(command.substring(0, 1).toUpperCase() + command.substring(1)));
                 call = new CallSpec(Stream.concat(head.stream(), call.arguments.stream()).toList());
