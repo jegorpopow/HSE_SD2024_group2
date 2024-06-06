@@ -80,8 +80,7 @@ public class Parser {
                 .filter(str -> !str.isEmpty())
                 .map(this::processRawToken)
                 .toList();
-
-        System.out.println(tokens);
+        
         for (String token : tokens) {
             if (token.equals("|")) {
 
