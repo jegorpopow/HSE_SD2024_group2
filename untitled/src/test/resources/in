@@ -1,0 +1,5 @@
+wc src/test/resources/test_text
+cat src/test/resources/test_text
+pwd
+java
+exit
